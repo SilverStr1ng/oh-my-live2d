@@ -25,15 +25,16 @@ export class GlobalStyle {
   /**
    * 挂载
    */
-  mount(): void {
+  mount(parentElement?: HTMLElement): void {
+    console.log('[OML2D] GlobalStyle mount called', { parentElement: parentElement?.id });
     if (this.styleSheet) {
-      document.head.append(this.styleSheet);
+      (parentElement || document.head).append(this.styleSheet);
     }
   }
 
-  initialize(): void {
+  initialize(parentElement?: HTMLElement): void {
     this.create();
-    this.mount();
+    this.mount(parentElement);
     this.reloadStyleSheet();
   }
   initializeStyle(): void {

@@ -63,8 +63,15 @@ export class Stage {
     if (parentElement) {
       this.options.parentElement = parentElement;
     }
-    this.unMount();
-    this.mount();
+    if (!this.element || !this.canvasElement) {
+      this.mount();
+
+      return;
+    }
+
+    if (this.element.parentElement !== this.options.parentElement) {
+      this.options.parentElement.append(this.element);
+    }
   }
 
   setStyle(style: CSSProperties, callback?: () => void): void {

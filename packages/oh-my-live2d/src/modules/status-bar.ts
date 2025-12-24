@@ -18,10 +18,21 @@ export class StatusBar {
   private style: CSSProperties = {};
   private timer = 0;
   private status = false;
+  private isSilent = false;
   constructor(private options: DefaultOptions) {}
 
   get statusBarOptions(): DefaultStatusBarOptions {
     return this.options.statusBar;
+  }
+
+  /**
+   * 设置静默模式，静默模式下不弹出任何消息
+   */
+  setSilent(silent: boolean): void {
+    this.isSilent = silent;
+    if (silent) {
+      this.forceClose();
+    }
   }
 
   create(): void {
@@ -64,8 +75,28 @@ export class StatusBar {
 
   // 重新挂载
   reMount(): void {
-    this.unMount();
-    this.mount();
+    if (!this.element) {
+      this.mount();
+
+      return;
+    }
+
+    if (this.element.parentElement !== this.options.parentElement) {
+      this.options.parentElement.append(this.element);
+    }
+  }
+
+  /**
+   * 强制关闭并隐藏，无动画
+   */
+  forceClose(): void {
+    clearTimeout(this.timer);
+    this.status = false;
+    this.setStyle({
+      animationName: 'none',
+      opacity: '0',
+      visibility: 'hidden'
+    });
   }
 
   /**
@@ -109,7 +140,7 @@ export class StatusBar {
           animationFillMode: 'forwards'
         });
         setTimeout(() => {
-          this.status = true;
+          this.status = false;
           resolve();
         }, this.statusBarOptions.transitionTime);
       }
@@ -157,6 +188,12 @@ export class StatusBar {
     if (this.element) {
       this.element.onclick = null;
     }
+  }
+
+  // 清除所有事件
+  clearEvents(): void {
+    this.clearClickEvent();
+    this.clearHoverEvent();
   }
 
   rest(): void {
@@ -215,6 +252,9 @@ export class StatusBar {
    * @param delay
    */
   popup(message?: string, delay: number | false = 0, color = this.options.primaryColor): void {
+    if (this.isSilent) {
+      return;
+    }
     clearTimeout(this.timer);
     this.setColor(color);
     if (message) {

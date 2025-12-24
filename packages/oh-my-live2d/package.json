@@ -1,18 +1,19 @@
 {
   "name": "oh-my-live2d",
-  "version": "0.19.3",
-  "description": "live2d component for web. 看板娘组件, 支持 model2、model3、model4",
+  "version": "0.19.3-patch.2",
+  "description": "live2d component for web. 看板娘组件, 支持 model2、model3、model4 (Forked for SPA support)",
   "keywords": [
     "Live2D",
     "cubism2",
     "cubism5",
-    "Live2D Component"
+    "Live2D Component",
+    "SPA"
   ],
-  "homepage": "https://github.com/oh-my-live2d/oh-my-live2d#readme",
-  "bugs": "https://github.com/oh-my-live2d/oh-my-live2d/issues",
+  "homepage": "https://github.com/SilverStr1ng/oh-my-live2d#readme",
+  "bugs": "https://github.com/SilverStr1ng/oh-my-live2d/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oh-my-live2d/oh-my-live2d.git",
+    "url": "git+https://github.com/SilverStr1ng/oh-my-live2d.git",
     "directory": "packages/oh-my-live2d"
   },
   "license": "MIT",

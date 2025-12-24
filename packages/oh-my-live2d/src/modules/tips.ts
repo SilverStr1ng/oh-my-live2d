@@ -25,10 +25,21 @@ export class Tips {
   private priority = 0; // 当前优先级
   private contentStyle: CSSProperties = {};
   private _tipsOptions: DefaultTipsOptions = DEFAULT_OPTIONS.tips;
+  private isSilent = false;
   constructor(
     private options: DefaultOptions,
     private oml2d: OhMyLive2D
   ) {}
+
+  /**
+   * 设置静默模式
+   */
+  setSilent(silent: boolean): void {
+    this.isSilent = silent;
+    if (silent) {
+      this.clear();
+    }
+  }
 
   reload(stageElement: HTMLElement): void {
     this.clear();
@@ -127,7 +138,7 @@ export class Tips {
   }
 
   showMessage(message: string, duration = 3000, priority = 0): void {
-    if (priority < this.priority) {
+    if (this.isSilent || priority < this.priority) {
       return;
     }
     this.priority = priority;

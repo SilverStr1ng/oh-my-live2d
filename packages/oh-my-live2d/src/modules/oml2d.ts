@@ -37,6 +37,8 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
   private _modelIndex: number = 0;
   private _modelClothesIndex: number = 0;
   private isFirstLoad = true;
+  private isTransitioning = false;
+  private pendingReload = false;
   version = __VERSION__;
   options: DefaultOptions;
   private events: Events;
@@ -53,6 +55,7 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     this.models = new Models(this.options, this.events);
     this.modelIndex = getModelIndex();
     this.modelClothesIndex = getModelClothesIndex();
+    console.log('[OML2D] Instance created - Patch Version: 20251224-V2');
     this.initialize();
   }
   private set modelIndex(index: number) {
@@ -108,6 +111,22 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
   }
 
   /**
+   * 设置静默模式 (不显示状态条和提示框)
+   */
+  setSilent(silent: boolean): void {
+    this.isTransitioning = silent;
+    if (silent) {
+      this.isFirstLoad = false;
+      this.pendingReload = false;
+    } else if (this.pendingReload) {
+      this.pendingReload = false;
+      void this.reloadModel();
+    }
+    this.statusBar.setSilent(silent);
+    this.tips.setSilent(silent);
+  }
+
+  /**
    * 重新挂载
    * @param parentElement
    */
@@ -115,8 +134,36 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     if (parentElement) {
       this.options.parentElement = parentElement;
     }
+
+    console.log('[OML2D] reMount called', {
+      hasParent: !!parentElement,
+      stageParentMatch: this.stage.element?.parentElement === parentElement,
+      stageConnected: this.stage.element?.isConnected
+    });
+
+    if (parentElement && this.stage.element?.parentElement === parentElement && this.stage.element?.isConnected) {
+      console.log('[OML2D] reMount: already mounted and connected, skipping destructive operations');
+      this.globalStyle.mount(parentElement);
+      this.statusBar.reMount();
+
+      return;
+    }
+
+    console.log('[OML2D] reMount: performing full re-mount');
+    this.setSilent(true);
+
+    // 重新挂载前清除所有正在显示的提示
+    this.tips.clear();
+    this.statusBar.clearEvents();
+
+    this.globalStyle.mount(parentElement);
     this.stage.reMount(parentElement);
     this.statusBar.reMount();
+
+    // 增加锁定时长，确保覆盖动画重置的时间 (1000ms 动画 + 500ms 缓冲)
+    setTimeout(() => {
+      this.setSilent(false);
+    }, 1500);
   }
 
   stopTipsIdle() {
@@ -127,6 +174,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     this.tips.idlePlayer?.start();
   }
   statusBarPopup(content?: string | undefined, delay?: number | undefined, color?: string | undefined) {
+    if (this.isTransitioning) {
+      return;
+    }
     this.statusBar.popup(content, delay, color);
   }
 
@@ -135,6 +185,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
   }
 
   tipsMessage(message: string, duration: number, priority: number) {
+    if (this.isTransitioning) {
+      return;
+    }
     this.tips.notification(message, duration, priority);
   }
 
@@ -182,6 +235,12 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
    * 加载模型
    */
   private async loadModel(): Promise<void> {
+    if (this.isTransitioning) {
+      this.pendingReload = true;
+
+      return;
+    }
+    this.pendingReload = false;
     this.tips.clear();
     await this.stage.slideOut();
 
@@ -201,6 +260,7 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
       .create()
       .catch(() => {
         this.statusBar.loadingError(() => void this.reloadModel());
+        this.events.emit('load', 'fail');
       })
       .then(() => {
         this.pixiApp?.mount(this.models.model);
@@ -210,7 +270,10 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
         this.models.settingModel();
         this.stage.reloadStyle(this.models.modelSize);
         this.pixiApp?.resize();
-        this.statusBar.hideLoading();
+        if (!this.isTransitioning) {
+          this.statusBar.hideLoading();
+        }
+        this.events.emit('load', 'success');
       });
   }
 
@@ -219,6 +282,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
    */
   async reloadModel(): Promise<void> {
     await this.loadModel();
+    if (this.isTransitioning) {
+      return;
+    }
     await this.stage.slideIn();
     this.tips.idlePlayer?.start();
   }
@@ -232,6 +298,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
 
     this.statusBar.open(this.options.statusBar.switchingMessage);
     await this.loadModel();
+    if (this.isTransitioning) {
+      return;
+    }
     await this.stage.slideIn();
     void this.tips.idlePlayer?.start();
   }
@@ -248,6 +317,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     this.statusBar.open(this.options.statusBar.switchingMessage);
 
     await this.loadModel();
+    if (this.isTransitioning) {
+      return;
+    }
     await this.stage.slideIn();
     void this.tips.idlePlayer?.start();
   }
@@ -263,6 +335,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
       this.statusBar.open(this.options.statusBar.switchingMessage);
 
       await this.loadModel();
+      if (this.isTransitioning) {
+        return;
+      }
       await this.stage.slideIn();
       void this.tips.idlePlayer?.start();
     }
@@ -321,7 +396,7 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
 
     this.registerGlobalEvent();
 
-    this.globalStyle.initialize();
+    this.globalStyle.initialize(this.options.parentElement);
 
     //  创建舞台和状态条
     this.create();
@@ -390,6 +465,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
    * @param color
    */
   statusBarOpen(content?: string, color?: string): void {
+    if (this.isTransitioning) {
+      return;
+    }
     this.statusBar.open(content, color);
   }
 
@@ -414,6 +492,9 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
    * @param delay
    */
   statusBarClose(content?: string, delay?: number, color?: string): void {
+    if (this.isTransitioning) {
+      return;
+    }
     this.statusBar.close(content, color, delay);
   }
   /**
@@ -456,7 +537,7 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     });
 
     this.onStageSlideIn(() => {
-      if (this.isFirstLoad) {
+      if (this.isFirstLoad && !this.isTransitioning) {
         this.tips.welcome();
         this.isFirstLoad = false;
       }
