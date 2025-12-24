@@ -36,6 +36,7 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
   private pixiApp?: PixiApp;
   private _modelIndex: number = 0;
   private _modelClothesIndex: number = 0;
+  private isFirstLoad = true;
   version = __VERSION__;
   options: DefaultOptions;
   private events: Events;
@@ -96,6 +97,26 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
    */
   setModelScale(scale: number) {
     this.models.setScale(scale);
+  }
+
+  /**
+   * 设置模型表情
+   * @param name 表情名称
+   */
+  setExpression(name: string): void {
+    this.models.setExpression(name);
+  }
+
+  /**
+   * 重新挂载
+   * @param parentElement
+   */
+  reMount(parentElement?: HTMLElement): void {
+    if (parentElement) {
+      this.options.parentElement = parentElement;
+    }
+    this.stage.reMount(parentElement);
+    this.statusBar.reMount();
   }
 
   stopTipsIdle() {
@@ -349,6 +370,21 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
   }
 
   /**
+   * 休息/睡眠
+   */
+  sleep(): void {
+    this.statusBar.open(this.options.statusBar.restMessage);
+    this.tips.clear();
+    this.statusBar.setClickEvent(() => {
+      void this.stage.slideIn();
+      this.statusBar.close();
+      this.statusBar.clearClickEvent();
+      this.statusBar.clearHoverEvent();
+    });
+    void this.stage.slideOut();
+  }
+
+  /**
    * 弹出状态条并保持打开状态
    * @param content
    * @param color
@@ -420,7 +456,10 @@ export class OhMyLive2D implements Oml2dProperties, Oml2dMethods, Oml2dEvents {
     });
 
     this.onStageSlideIn(() => {
-      this.tips.welcome();
+      if (this.isFirstLoad) {
+        this.tips.welcome();
+        this.isFirstLoad = false;
+      }
     });
 
     window.document.oncopy = (): void => {

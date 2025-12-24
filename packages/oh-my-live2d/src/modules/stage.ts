@@ -59,7 +59,10 @@ export class Stage {
     this.element?.remove();
   }
 
-  reMount(): void {
+  reMount(parentElement?: HTMLElement): void {
+    if (parentElement) {
+      this.options.parentElement = parentElement;
+    }
     this.unMount();
     this.mount();
   }

@@ -180,4 +180,12 @@ export class Models {
 
     this.playMotion(motion || '');
   }
+
+  /**
+   * 设置表情
+   * @param name 表情名称
+   */
+  setExpression(name: string): void {
+    void this.model?.expression(name);
+  }
 }

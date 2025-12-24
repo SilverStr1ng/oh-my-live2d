@@ -91,6 +91,11 @@ export interface Oml2dMethods {
   stageSlideOut: () => Promise<void>;
 
   /**
+   * 休息/睡眠
+   */
+  sleep: () => void;
+
+  /**
    * 设置舞台大小
    * @param size 舞台大小
    * @param size.width 宽度
@@ -197,6 +202,18 @@ export interface Oml2dMethods {
    * @returns
    */
   setModelAnchor: (anchor: { x?: number; y?: number }) => void;
+
+  /**
+   * 设置模型表情
+   * @param name 表情名称
+   */
+  setExpression: (name: string) => void;
+
+  /**
+   * 重新挂载组件, 适用于单页应用切换页面后重新挂载
+   * @param parentElement 父容器
+   */
+  reMount: (parentElement?: HTMLElement) => void;
 }
 
 /**

@@ -63,7 +63,7 @@ export class StatusBar {
   }
 
   // 重新挂载
-  reMounte(): void {
+  reMount(): void {
     this.unMount();
     this.mount();
   }
